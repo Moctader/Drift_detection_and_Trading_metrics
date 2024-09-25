@@ -46,7 +46,7 @@ The script `drift_detection/LSTM_calculate_metrics.py` utilizes an LSTM model to
     python drift_detection/LSTM_calculate_metrics.py
 
 
-## Stock Price Prediction using Linear Regression for clear understanding about Drift 
+## Stock Price Prediction Using Linear Regression to Enhance Understanding of Data Drift
 ![linear_regression_drift](images/linear_regression.png)
 
 
@@ -98,7 +98,7 @@ feature_distribution_visualization/evalute_drift_with_evidently.py ingests time 
 ![stat](images/stat.png)
 
 
-## Reason for unable touse stock splits
+## Reason for unable to use stock splits
 I noticed that after stock splits, the price of the stock should typically decrease due to the proportional adjustment. However, in many cases, the share price increased following the split. This makes the dataset more challenging to use as a reference for drift detection because the expected price behavior doesn't align with the general stock split mechanism.
 
 ![stock](images/stock_split.png)
