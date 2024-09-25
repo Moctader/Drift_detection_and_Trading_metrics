@@ -96,3 +96,9 @@ feature_distribution_visualization/evalute_drift_with_evidently.py ingests time 
 
 ### Statest test
 ![stat](images/stat.png)
+
+
+## Reason for unable touse stock splits
+I noticed that after stock splits, the price of the stock should typically decrease due to the proportional adjustment. However, in many cases, the share price increased following the split. This makes the dataset more challenging to use as a reference for drift detection because the expected price behavior doesn't align with the general stock split mechanism.
+
+![stock](images/stock_split.png)
