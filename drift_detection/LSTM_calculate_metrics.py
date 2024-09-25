@@ -1,3 +1,4 @@
+# Import necessary libraries
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -6,6 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from river.drift import ADWIN
 
 # Step 1: Download Apple stock data from Yahoo Finance
 data = yf.download('AAPL', start='2020-01-01', end='2023-01-01')
@@ -26,6 +28,7 @@ def create_dataset(data, time_step=60):
         y.append(data[i, 0])
     return np.array(X), np.array(y)
 
+# Function to build and train LSTM model
 def build_and_train_lstm(X, y):
     X = X.reshape(X.shape[0], X.shape[1], 1)
 
@@ -49,6 +52,9 @@ axes = axes.flatten()
 
 # Store metrics for each time step
 metrics_values = {'Time Step': [], 'MAE': [], 'RMSE': [], 'MSE': [], 'MAPE': [], 'R2': []}
+
+# Initialize ADWIN for concept drift detection
+adwin = ADWIN()
 
 # Iterate over each time step
 for i, time_step in enumerate(time_steps):
@@ -93,6 +99,22 @@ for i, time_step in enumerate(time_steps):
     axes[i].set_xlabel('Date', fontsize=10)
     axes[i].set_ylabel('Stock Price (USD)', fontsize=10)
     axes[i].legend(loc='upper left')
+
+    # Track drift dates and positions
+    drift_dates = []
+    drift_values = []
+
+    # Update ADWIN with the prediction error and check for drift
+    for idx, (actual, predicted) in enumerate(zip(actual_prices, predicted_prices)):
+        adwin.update(abs(actual - predicted))
+        if adwin.drift_detected:
+            drift_dates.append(dates[idx])
+            drift_values.append(predicted)  # Store the exact predicted price at drift
+
+    # Plot drift points if any
+    if drift_dates:
+        axes[i].scatter(drift_dates, drift_values, 
+                        color='red', marker='o', label='Drift Detected', s=40, zorder=5)
 
 plt.tight_layout()
 plt.show()
