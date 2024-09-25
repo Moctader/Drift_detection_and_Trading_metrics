@@ -314,3 +314,11 @@ def run_pipeline(config):
 if __name__ == "__main__":
     config = load_config("config.yaml")
     run_pipeline(config)
+
+
+
+    ## Scalar minmax()
+    ## log return (price difference between two days)
+    ## Difference between two days
+    ## Match between two segments
+    ## add some opacity so that we can see the overlap
