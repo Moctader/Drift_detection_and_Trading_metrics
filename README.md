@@ -47,7 +47,7 @@ The script `drift_detection/LSTM_calculate_metrics.py` utilizes an LSTM model to
 
 
 ## Stock Price Prediction using Linear Regression for clear understanding about Drift 
-    ![linear_regression_drift](images/linear_regression.png)
+![linear_regression_drift](images/linear_regression.png)
 
 
 
@@ -77,4 +77,4 @@ Trading_metric/trading_metrics.py fetching stock data, processing it, generating
    - Plot stock prices, moving averages, entry/exit points, RSI, and MACD.
 
 ### Outputs
-    ![trading](images/Trading.png)
+![trading](images/Trading.png)
