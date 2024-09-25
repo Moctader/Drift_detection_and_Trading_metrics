@@ -78,3 +78,21 @@ Trading_metric/trading_metrics.py fetching stock data, processing it, generating
 
 ### Outputs
 ![trading](images/Trading.png)
+
+
+## Feature distribution visualization using evidently
+## Overview
+
+feature_distribution_visualization/evalute_drift_with_evidently.py ingests time series data from an API, preprocesses it, trains a predictive model, and evaluates drift between historical and current data using various statistical tests. The drift metrics include:
+- Kolmogorov-Smirnov (KS) Test
+- Population Stability Index (PSI)
+- Kullback-Leibler Divergence (KL Divergence)
+- Jensen-Shannon Divergence
+- Wasserstein Distance
+
+### Outputs
+![open](images/open.png)
+![close](images/close.png)
+
+### Statest test
+![stat](images/stat.png)
