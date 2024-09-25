@@ -35,6 +35,7 @@ The script `drift_detection/LSTM_calculate_metrics.py` utilizes an LSTM model to
     ![drift](images/LSTM.png)
 
 - **Metrics Table**: A summary of the performance metrics (MAE, RMSE, MAPE, and R²) for each time step.
+    ![metrics](images/metrics.png)
 
 ### Usage
 1. Install the required dependencies:
@@ -44,3 +45,36 @@ The script `drift_detection/LSTM_calculate_metrics.py` utilizes an LSTM model to
     ````bash
     python drift_detection/LSTM_calculate_metrics.py
 
+
+## Stock Price Prediction using Linear Regression for clear understanding about Drift 
+    ![linear_regression_drift](images/linear_regression.png)
+
+
+
+## Trading Metrics
+
+## Overview
+Trading_metric/trading_metrics.py fetching stock data, processing it, generating technical indicators, and running a backtest using Vectorbt. It calculates key trading metrics such as Sharpe Ratio and visualizes indicators like Moving Averages, RSI, and MACD.
+
+## Workflow
+
+1. **Data Collection**: 
+   - Fetch stock data from an API using asyncio and requests.
+
+2. **Data Processing**: 
+   - Normalize stock data and clean missing values.
+
+3. **Technical Indicators**: 
+   - Generate EMA, RSI, and MACD using Vectorbt.
+
+4. **Backtesting**: 
+   - Run a trading strategy based on moving average crossovers.
+
+5. **Trading Metrics**: 
+   - Calculate Total Return, Max Drawdown, Volatility, Sharpe Ratio, and Sortino Ratio.
+
+6. **Visualization**: 
+   - Plot stock prices, moving averages, entry/exit points, RSI, and MACD.
+
+### Outputs
+    ![trading](images/Trading.png)
