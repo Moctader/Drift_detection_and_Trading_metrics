@@ -18,7 +18,7 @@ close_prices = data['Close'].values.reshape(-1, 1)
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data = scaler.fit_transform(close_prices)
 
-window_size = 60
+window_size = 2
 
 # Function to create dataset with a sliding window
 def create_dataset(data, time_step=window_size):
@@ -40,7 +40,7 @@ def build_and_train_lstm(X, y):
     return model
 
 # Step 3: Create Reference and Current Data (Split into training and testing)
-split_ratio = 0.9  # 90% Reference, 10% Current
+split_ratio = 0.6  # 90% Reference, 10% Current
 split_index = int(len(scaled_data) * split_ratio)
 
 # Reference Data (Historical data)
