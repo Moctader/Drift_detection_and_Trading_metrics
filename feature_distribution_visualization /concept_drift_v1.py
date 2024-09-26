@@ -18,8 +18,10 @@ close_prices = data['Close'].values.reshape(-1, 1)
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data = scaler.fit_transform(close_prices)
 
+window_size = 60
+
 # Function to create dataset with a sliding window
-def create_dataset(data, time_step=60):
+def create_dataset(data, time_step=window_size):
     X, y = [], []
     for i in range(time_step, len(data)):
         X.append(data[i-time_step:i, 0])
@@ -30,15 +32,15 @@ def create_dataset(data, time_step=60):
 def build_and_train_lstm(X, y):
     X = X.reshape(X.shape[0], X.shape[1], 1)
     model = Sequential()
-    model.add(LSTM(units=50, return_sequences=True, input_shape=(X.shape[1], 1)))
-    model.add(LSTM(units=50))
+    model.add(LSTM(units=100, return_sequences=True, input_shape=(X.shape[1], 1)))
+    model.add(LSTM(units=100))
     model.add(Dense(1))
     model.compile(loss='mean_squared_error', optimizer='adam')
     model.fit(X, y, epochs=20, batch_size=64, verbose=0)
     return model
 
 # Step 3: Create Reference and Current Data (Split into training and testing)
-split_ratio = 0.7  # 70% Reference, 30% Current
+split_ratio = 0.9  # 90% Reference, 10% Current
 split_index = int(len(scaled_data) * split_ratio)
 
 # Reference Data (Historical data)
@@ -46,7 +48,7 @@ reference_data = scaled_data[:split_index]
 X_ref, y_ref = create_dataset(reference_data)
 
 # Current Data (New data)
-current_data = scaled_data[split_index:]
+current_data = scaled_data[split_index - window_size:]  # Include the last window_size data points from reference data
 X_curr, y_curr = create_dataset(current_data)
 
 # Step 4: Build and train the LSTM model on reference data
@@ -82,29 +84,36 @@ print_metrics(actual_curr, predicted_curr, 'Current')
 adwin = ADWIN()
 drift_dates_adwin = []
 drift_values_adwin = []
-dates_curr = data.index[split_index + 60:]  # Dates corresponding to current data
 
+# Dates corresponding to current data (after the split index)
+dates_curr = data.index[split_index:]  # Adjust for the sliding window
+
+# Update ADWIN with the prediction error and check for drift
 for idx, (actual, predicted) in enumerate(zip(actual_curr, predicted_curr)):
-    adwin.update(abs(actual - predicted))
-    if adwin.drift_detected:
-        drift_dates_adwin.append(dates_curr[idx])
-        drift_values_adwin.append(predicted[0])
+    adwin.update(abs(actual - predicted))  # Feed the absolute error to ADWIN
+    if adwin.drift_detected:  # Check for drift using ADWIN
+        drift_dates_adwin.append(dates_curr[idx])  # Log the date of drift
+        drift_values_adwin.append(predicted)  # Log the predicted value at the drift point
 
-# Step 8: Plotting the Predictions and Highlighting Drift (ADWIN)
-plt.figure(figsize=(14, 7))
-plt.plot(data.index[60:], close_prices[60:], label='Actual Stock Price', color='blue')
-plt.plot(data.index[60:split_index], predicted_ref, label='Predicted Reference', color='green')
-plt.plot(dates_curr, predicted_curr, label='Predicted Current', color='orange')
+# Plotting ADWIN Drift Points
+fig, ax = plt.subplots(figsize=(14, 7))
+ax.plot(data.index[window_size:], close_prices[window_size:], label='Actual Stock Price', color='blue', linewidth=1)
+ax.plot(data.index[window_size:split_index], predicted_ref, label='Predicted Reference', color='green', linestyle='--', linewidth=1)
+ax.plot(dates_curr, predicted_curr, label='Predicted Current', color='orange', linestyle='--', linewidth=1)
 
 # Highlight ADWIN Drift Points
-if drift_dates_adwin:
-    plt.scatter(drift_dates_adwin, drift_values_adwin, color='red', label='ADWIN Drift', s=50)
+ax.plot(drift_dates_adwin, drift_values_adwin, 'o', color='red', label='ADWIN Drift', markersize=5)
 
-plt.title('Stock Price Prediction with Drift Detection (ADWIN)')
-plt.legend()
+# Add title and legend
+ax.set_title('Stock Price Prediction with Drift Detection (ADWIN)')
+ax.set_xlabel('Date')
+ax.set_ylabel('Stock Price (USD)')
+ax.legend(loc='upper left')
+
+plt.tight_layout()
 plt.show()
 
-# Step 9: Evidently AI for Drift Detection (Statistical tests on feature distributions)
+# Step 8: Evidently AI for Drift Detection (Statistical tests on feature distributions)
 def evaluate_drift_evidently(ref: pd.DataFrame, curr: pd.DataFrame):
     report = Report(metrics=[
         ColumnDriftMetric(column_name="value", stattest="ks", stattest_threshold=0.05),
@@ -128,8 +137,8 @@ def create_windows(data, window_size):
     return pd.DataFrame(windows, columns=[f'window_{i}' for i in range(window_size)]).stack().reset_index(drop=True).to_frame(name='value')
 
 # Sliding window for Evidently AI drift detection
-ref_window = create_windows(reference_data.flatten(), window_size=60)
-curr_window = create_windows(current_data.flatten(), window_size=60)
+ref_window = create_windows(reference_data.flatten(), window_size=window_size)
+curr_window = create_windows(current_data.flatten(), window_size=window_size)
 
 # Evidently AI drift detection
 drift_report = evaluate_drift_evidently(ref_window, curr_window)
@@ -145,21 +154,21 @@ drift_dates_evidently = dates_curr[drift_mask_evidently]
 drift_values_evidently = predicted_curr[drift_mask_evidently]
 
 # Plotting Evidently AI Drift Points
-plt.figure(figsize=(14, 7))
-plt.plot(data.index[60:], close_prices[60:], label='Actual Stock Price', color='blue')
-plt.plot(data.index[60:split_index], predicted_ref, label='Predicted Reference', color='green')
-plt.plot(dates_curr, predicted_curr, label='Predicted Current', color='orange')
-
-# Highlight ADWIN Drift Points
-if drift_dates_adwin:
-    plt.scatter(drift_dates_adwin, drift_values_adwin, color='red', label='ADWIN Drift', s=50)
+fig, ax = plt.subplots(figsize=(14, 7))
+ax.plot(data.index[window_size:], close_prices[window_size:], label='Actual Stock Price', color='blue', linewidth=1)
+ax.plot(data.index[window_size:split_index], predicted_ref, label='Predicted Reference', color='green', linestyle='--', linewidth=1)
+ax.plot(dates_curr, predicted_curr, label='Predicted Current', color='orange', linestyle='--', linewidth=1)
 
 # Highlight Evidently AI Drift Points
-if not drift_dates_evidently.empty:
-    plt.scatter(drift_dates_evidently, drift_values_evidently, color='purple', label='Evidently AI Drift', s=50)
+ax.plot(drift_dates_evidently, drift_values_evidently, 'o', color='purple', label='Evidently AI Drift', markersize=5)
 
-plt.title('Stock Price Prediction with Drift Detection (ADWIN & Evidently AI)')
-plt.legend()
+# Add title and legend
+ax.set_title('Stock Price Prediction with Drift Detection (Evidently AI)')
+ax.set_xlabel('Date')
+ax.set_ylabel('Stock Price (USD)')
+ax.legend(loc='upper left')
+
+plt.tight_layout()
 plt.show()
 
 # Final Comparison of ADWIN and Evidently AI Drift Results
@@ -167,7 +176,7 @@ print(f"\nADWIN detected drift at {len(drift_dates_adwin)} points.")
 print(f"Evidently AI Drift Detected: {drift_report['is_drifted'].sum()} occurrences.")
 print("\nADWIN Drift Points:")
 for date, value in zip(drift_dates_adwin, drift_values_adwin):
-    print(f"Date: {date}, Predicted Value: {value}")
+    print(f"Date: {date}, Predicted Value: {value[0]}")
 
 print("\nEvidently AI Drift Points:")
 for date, value in zip(drift_dates_evidently, drift_values_evidently):
