@@ -58,7 +58,7 @@ X_test, y_test = X[train_size:], y[train_size:]
 
 # Train the model
 history = model.fit(X_train, y_train, validation_data=(X_test, y_test),
-                    epochs=10, batch_size=64, callbacks=[early_stop], verbose=1)
+                    epochs=100, batch_size=64, callbacks=[early_stop], verbose=1)
 
 # Step 6: Make Predictions
 train_predict = model.predict(X_train)
@@ -75,41 +75,50 @@ train_rmse = np.sqrt(mean_squared_error(y_train_actual, train_predict))
 test_rmse = np.sqrt(mean_squared_error(y_test_actual, test_predict))
 print(f"Train RMSE: {train_rmse}, Test RMSE: {test_rmse}")
 
-# Step 8: Create Trading Signals Based on Predicted Prices
+# Step 8: Create Trading Signals Based on Moving Averages
 # Combine train and test predictions for overall analysis
 predicted_prices = np.concatenate((train_predict, test_predict), axis=0)
 
-# Generate trading signals based on price movements
-# Signal: 1 for buy, -1 for sell, 0 for hold
-signals = np.where(np.diff(predicted_prices.flatten()) > 0, 1, -1)  # 1 for buy, -1 for sell
-signals = np.append(0, signals)  # Prepend 0 for alignment
+# Create a DataFrame with predicted prices
+predicted_prices_df = pd.DataFrame(predicted_prices, columns=['Predicted Price'])
 
-# Create a DataFrame for better visualization
-trading_signals_df = pd.DataFrame({
-    'Actual Price': np.concatenate((y_train_actual.flatten(), y_test_actual.flatten())),
-    'Predicted Price': predicted_prices.flatten(),
-    'Signal': signals
-})
+# Define moving average windows
+fast_window = 5  # Fast moving average window (short-term)
+slow_window = 20  # Slow moving average window (long-term)
 
-# Step 9: Visualize Actual vs Predicted Prices and Signals
+# Calculate moving averages
+predicted_prices_df['Fast_MA'] = predicted_prices_df['Predicted Price'].rolling(window=fast_window).mean()
+predicted_prices_df['Slow_MA'] = predicted_prices_df['Predicted Price'].rolling(window=slow_window).mean()
+
+# Generate trading signals based on moving average crossovers
+predicted_prices_df['Signal'] = 0  # Default signal to 0
+predicted_prices_df['Signal'] = np.where(predicted_prices_df['Fast_MA'] > predicted_prices_df['Slow_MA'], 1, 0)  # 1 for buy
+predicted_prices_df['Signal'] = np.where(predicted_prices_df['Fast_MA'].shift(1) > predicted_prices_df['Slow_MA'].shift(1), 
+                                         np.where(predicted_prices_df['Fast_MA'] < predicted_prices_df['Slow_MA'], -1, predicted_prices_df['Signal']), 
+                                         predicted_prices_df['Signal'])  # -1 for sell
+
+# Step 9: Align signals with actual predictions
+signals = predicted_prices_df['Signal'].fillna(0).values  # Fill NaN values with 0 for initial rows
+
+# Step 10: Visualize Actual vs Predicted Prices and Signals
 plt.figure(figsize=(14, 7))
 plt.plot(data, label='Actual Prices', color='blue')
 plt.plot(np.arange(time_step, time_step + len(train_predict)), train_predict, label='Predicted Prices (Train)', color='green')
 plt.plot(np.arange(time_step + len(train_predict), time_step + len(train_predict) + len(test_predict)), test_predict, label='Predicted Prices (Test)', color='orange')
 
 # Highlight buy/sell signals
-buy_signals = trading_signals_df[trading_signals_df['Signal'] == 1]
-sell_signals = trading_signals_df[trading_signals_df['Signal'] == -1]
-plt.scatter(buy_signals.index, buy_signals['Predicted Price'], marker='^', color='green', label='Buy Signal', s=10)
-plt.scatter(sell_signals.index, sell_signals['Predicted Price'], marker='v', color='red', label='Sell Signal', s=10)
+buy_signals = predicted_prices_df[predicted_prices_df['Signal'] == 1]
+sell_signals = predicted_prices_df[predicted_prices_df['Signal'] == -1]
+plt.scatter(buy_signals.index, buy_signals['Predicted Price'], marker='^', color='green', label='Buy Signal', s=5)
+plt.scatter(sell_signals.index, sell_signals['Predicted Price'], marker='v', color='red', label='Sell Signal', s=5)
 
-plt.title('AAPL Stock Price Prediction with Trading Signals')
+plt.title('AAPL Stock Price Prediction with Trading Signals Based on Moving Averages')
 plt.xlabel('Days')
 plt.ylabel('Price')
 plt.legend()
 plt.show()
 
-# Step 10: Evaluate Trading Performance
+# Step 11: Evaluate Trading Performance
 # Convert prices to DataFrame for easier handling
 prices_df = pd.DataFrame(data, columns=['Actual Price'])
 prices_df['Predicted Price'] = np.nan
@@ -125,7 +134,7 @@ signals = np.append(signals, [0] * (len(prices_df) - len(signals)))
 prices_df['Signal'] = signals[:len(prices_df)]  # Adjusting signals to match the length of prices_df
 
 # Calculate returns based on signals
-initial_investment = 10000
+initial_investment = 100000
 prices_df['Daily Returns'] = prices_df['Actual Price'].pct_change()
 prices_df['Strategy Returns'] = prices_df['Daily Returns'] * prices_df['Signal'].shift(1)  # Shift signals to align with next day returns
 
