@@ -7,7 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from sklearn.metrics import mean_absolute_error
-from river.drift import ADWIN, PageHinkley
+from river.drift import PageHinkley
 
 # Function to create dataset with sliding window
 def create_dataset(data, time_step=60):
@@ -28,7 +28,7 @@ def build_and_train_lstm(X, y):
     model.fit(X, y, epochs=20, batch_size=64, verbose=0)
     return model
 
-# Pipeline to detect drift using DDM
+# Pipeline to compare drift detection using Page-Hinkley
 def run_comparison_pipeline(window_size):
     # 1. Fetch Apple stock data
     data = yf.download('AAPL', start='2020-01-01', end='2023-01-01')
@@ -60,34 +60,38 @@ def run_comparison_pipeline(window_size):
     curr_mae = mean_absolute_error(curr_actual, curr_predicted)
     print(f"Reference MAE: {ref_mae}, Current MAE: {curr_mae}")
 
-    # Initialize DDM for drift detection
-    ddm = PageHinkley()
+    # Initialize Page-Hinkley for drift detection
+    ph = PageHinkley()
 
-    # Detect drift points using DDM
+    # Detect drift points using Page-Hinkley
     drift_dates = []
     drift_values = []
     dates = data.index[window_size:]
 
     for idx, (actual, predicted) in enumerate(zip(curr_actual, curr_predicted)):
         error = abs(actual - predicted)
-        ddm.update(error)
-        if ddm.drift_detected:
+        ph.update(error)
+        if ph.drift_detected:
             drift_dates.append(dates[split_index + idx])
             drift_values.append(predicted)
 
     # Plotting Drift Points
+    ref_dates = dates[:split_index]
+    curr_dates = dates[split_index:]
+
     plt.figure(figsize=(12, 6))
-    plt.plot(dates, actual_prices, label='Actual Stock Price', color='blue')
-    plt.plot(dates, predicted_prices, label='Predicted Stock Price', color='orange')
+    plt.plot(ref_dates, ref_actual, label='Actual Stock Price (Reference)', color='blue')
+    plt.plot(ref_dates, ref_predicted, label='Predicted Stock Price (Reference)', color='orange')
+    plt.plot(curr_dates, curr_actual, label='Actual Stock Price (Current)', color='green')
+    plt.plot(curr_dates, curr_predicted, label='Predicted Stock Price (Current)', color='red')
 
     if len(drift_dates) > 0:
-        plt.scatter(drift_dates, drift_values, color='red', label='Detected Drift', s=50)
+        plt.scatter(drift_dates, drift_values, color='purple', label='Detected Drift', s=50)
     
-    plt.title('Drift Detection Using DDM')
+    plt.title('Page-Hinkley Drift Detection')
     plt.legend()
     plt.show()
 
 if __name__ == "__main__":
-    window_sizes = [60, 90, 120, 180]
-    for window_size in window_sizes:
-        run_comparison_pipeline(window_size)
+    window_size = 60
+    run_comparison_pipeline(window_size)
