@@ -22,3 +22,10 @@ The output of the model (on both reference and current data). These predictions,
 Role in Drift Detection:
 Compare predictions on reference vs. current data. For example, if the model was making correct predictions on the reference data but performs poorly on current data, it signals potential drift.
 Prediction error distribution: Changes in the error distribution (e.g., increasing prediction errors) may indicate drift.
+
+
+
+
+
+## performance based
+## Distribution bassed
