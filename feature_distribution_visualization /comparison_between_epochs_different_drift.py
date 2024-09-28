@@ -20,7 +20,7 @@ def create_dataset(data, time_step=60):
     return np.array(X), np.array(y)
 
 # LSTM model creation
-def build_and_train_lstm(X, y, validation_data=None):
+def build_and_train_lstm(X, y, epochs, validation_data=None):
     X = X.reshape(X.shape[0], X.shape[1], 1)
     
     model = Sequential()
@@ -41,16 +41,16 @@ def build_and_train_lstm(X, y, validation_data=None):
     model.compile(loss='mean_squared_error', optimizer='adam')
     
     # Callbacks
-    early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+    early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=0.0001)
     
-    model.fit(X, y, epochs=100, batch_size=64, validation_data=validation_data, 
+    model.fit(X, y, epochs=epochs, batch_size=64, validation_data=validation_data, 
               callbacks=[early_stop, reduce_lr], verbose=1)
     
     return model
 
 # Pipeline to compare drift detection using various detectors
-def run_comparison_pipeline(window_size):
+def run_comparison_pipeline(window_size, epochs):
     # 1. Fetch Apple stock data
     data = yf.download('AAPL', start='2020-01-01', end='2023-01-01')
     
@@ -63,7 +63,7 @@ def run_comparison_pipeline(window_size):
     X, y = create_dataset(scaled_data, window_size)
 
     # Train and predict using LSTM
-    model = build_and_train_lstm(X, y)
+    model = build_and_train_lstm(X, y, epochs)
     predicted_stock_price = model.predict(X)
     predicted_stock_price = scaler.inverse_transform(predicted_stock_price)
     actual_prices = close_prices[window_size:].flatten()
@@ -81,6 +81,10 @@ def run_comparison_pipeline(window_size):
     curr_mae = mean_absolute_error(curr_actual, curr_predicted)
     print(f"Reference MAE: {ref_mae}, Current MAE: {curr_mae}")
 
+    # Calculate maximum deviation
+    ref_max_deviation = np.max(np.abs(ref_actual - ref_predicted))
+    print(f"Reference Max Deviation: {ref_max_deviation}")
+
     # Initialize Drift Detectors
     detectors = {
         "Page-Hinkley": PageHinkley(),
@@ -92,8 +96,17 @@ def run_comparison_pipeline(window_size):
     drift_results = {detector: {'dates': [], 'values': []} for detector in detectors}
     dates = data.index[window_size:]
     
+    # Store points where current deviation exceeds reference max deviation
+    exceed_deviation_dates = []
+    exceed_deviation_values = []
+
     for idx, (actual, predicted) in enumerate(zip(curr_actual, curr_predicted)):
         error = abs(actual - predicted)
+
+        # Check if current deviation exceeds reference max deviation
+        if error > ref_max_deviation:
+            exceed_deviation_dates.append(dates[split_index + idx])
+            exceed_deviation_values.append(predicted)
 
         # Update each detector with the error and log drift points
         for detector_name, detector in detectors.items():
@@ -112,16 +125,22 @@ def run_comparison_pipeline(window_size):
     plt.plot(curr_dates, curr_actual, label='Actual Stock Price (Current)', color='green')
     plt.plot(curr_dates, curr_predicted, label='Predicted Stock Price (Current)', color='red')
 
+    # Plot points where current deviation exceeds reference max deviation
+    if len(exceed_deviation_dates) > 0:
+        plt.scatter(exceed_deviation_dates, exceed_deviation_values, color='black', label='Exceed Deviation', s=30)
+
     # Plot drift points for each detector
-    colors = ['purple', 'magenta', 'cyan', 'black']
+    colors = ['purple', 'magenta', 'cyan']
     for i, (detector_name, result) in enumerate(drift_results.items()):
         if len(result['dates']) > 0:
-            plt.scatter(result['dates'], result['values'], color=colors[i], label=f'{detector_name} Drift', s=50)
+            plt.scatter(result['dates'], result['values'], color=colors[i], label=f'{detector_name} Drift', s=30)
 
-    plt.title('Multiple Drift Detection Algorithms')
+    plt.title(f'Multiple Drift Detection Algorithms (Epochs: {epochs})')
     plt.legend()
+    plt.savefig(f'drift_detection_epochs_{epochs}.png')
     plt.show()
 
 if __name__ == "__main__":
     window_size = 60
-    run_comparison_pipeline(window_size)
+    for epochs in [50, 100, 150, 400]:
+        run_comparison_pipeline(window_size, epochs)

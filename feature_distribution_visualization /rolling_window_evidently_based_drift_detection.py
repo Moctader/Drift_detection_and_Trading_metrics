@@ -89,7 +89,7 @@ def run_comparison_pipeline(window_size):
     
     plt.title('Evidently AI Drift Detection')
     plt.legend()
-    plt.show()
+    #plt.show()
 
 if __name__ == "__main__":
     window_size = 60
