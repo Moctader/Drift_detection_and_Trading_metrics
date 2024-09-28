@@ -1,53 +1,64 @@
-# Drift Detection and Trading Metrics
+# Stock Price Prediction and Drift Detection using LSTM
 
-This repository demonstrates drift detection, feature visualization using Evidently, and trading metrics analysis through stock price predictions using an LSTM model.
+This repository demonstrates the use of an LSTM (Long Short-Term Memory) model to predict Apple's stock prices (AAPL) and detect performance drift, distribution drift detection, and trading over time using various drift detection algorithms such as Page-Hinkley, ADWIN, and KSWIN.
 
-## Stock Price Prediction using LSTM and Drift Analysis
+## Overview
 
-### Overview
-The script `drift_detection/LSTM_calculate_metrics.py` utilizes an LSTM model to predict Apple's stock price (AAPL) and perform drift analysis by comparing model performance across various time steps. The results highlight areas where the model's predictions deviate from the actual stock prices.
+feature_distribution_visualization /comparison_between_epochs_different_drift.py uses an LSTM model to make stock price predictions and analyzes model performance over time. Drift detection algorithms are used to identify periods where the model's prediction errors exceed a reference deviation, signaling changes in stock price behavior and model underperformance.
 
-### Workflow
-1. **Data Collection**: 
-   - Download historical AAPL stock data using the `yfinance` library.
+## Features
+
+- **Stock Price Prediction**: Predict future stock prices using a trained LSTM model.
+- **Drift Detection**: Identify points where the model's prediction errors exceed the reference deviation using drift detectors (Page-Hinkley, ADWIN, KSWIN).
+- **Performance Metrics**: Calculate performance metrics such as MAE (Mean Absolute Error) and Maximum Deviation for both reference and current periods.
+- **Visualization**: Plot actual and predicted prices, highlighting drift detection points.
+
+## Workflow
+
+1. **Data Collection**:
+   - Fetch historical stock price data for Apple (AAPL) from Yahoo Finance using the `yfinance` library.
    
-2. **Data Preprocessing**: 
-   - Normalize the 'Close' prices using MinMaxScaler.
-   - Create a sliding window dataset for time series forecasting.
+2. **Data Preprocessing**:
+   - Normalize the stock 'Close' prices using `MinMaxScaler`.
+   - Create time series datasets with sliding windows for LSTM training.
 
-3. **Model Training**: 
-   - Train LSTM models for different time steps (30, 60, 90, 120, 150, 180) to predict stock prices.
+3. **LSTM Model Training**:
+   - Train a multi-layered LSTM model with dropout and batch normalization to predict stock prices.
+   - Experiment with different epoch values (50, 100, 150, 400) to compare performance.
    
-4. **Prediction & Drift Analysis**: 
-   - Make predictions on the historical data using the trained models.
-   - Visualize actual vs. predicted stock prices and highlight drift areas where predictions deviate from actual prices.
+4. **Prediction & Drift Detection**:
+   - Split data into reference and current periods.
+   - Calculate the maximum deviation between actual and predicted prices in the reference period.
+   - Use drift detection algorithms to monitor the model's performance in the current period and detect drifts.
 
-5. **Performance Metrics**: 
-   - Compute key performance metrics:
-     - **MAE** (Mean Absolute Error)
-     - **RMSE** (Root Mean Squared Error)
-     - **MSE** (Mean Squared Error)
-     - **MAPE** (Mean Absolute Percentage Error)
-     - **R²** (R-squared)
+5. **Performance Evaluation**:
+   - Compute key metrics such as MAE, Max Deviation, and analyze drift points for each drift detection algorithm.
+
+## Performance Metrics
+
+The following metrics are used to evaluate the LSTM model's prediction performance:
+- **MAE (Mean Absolute Error)**: The average absolute difference between predicted and actual prices.
+- **Max Deviation**: The maximum deviation between predicted and actual prices in the reference period.
+- **Drift Points**: The points where drift detection algorithms identified significant changes in the model's performance.
+
+
+
+## Visualization**:
+   The plots include:
+   - Actual vs. Predicted stock prices for both reference and current periods.
+   - Drift detection points marked on the plots where each algorithm detected a drift.
+
 
 ### Outputs
-- **Subplots**: Visual comparison of actual vs. predicted stock prices, with areas of drift highlighted for each time step.
-    ![drift](images/LSTM.png)
 
-- **Metrics Table**: A summary of the performance metrics (MAE, RMSE, MAPE, and R²) for each time step.
-    ![metrics](images/metrics.png)
-
-### Usage
-1. Install the required dependencies:
-   ```bash
-   pip install -r requirements.txt
-2. Run the script to train the LSTM model, make predictions, and visualize the results:
-    ````bash
-    python drift_detection/LSTM_calculate_metrics.py
+- **Results based on different epoches and the drift algorithoms**:.
+    ![epoches](images/drift_detection_epochs_50.png)
+    ![epoches](images/drift_detection_epochs_100.png)
+    ![epoches](images/drift_detection_epochs_150.png)
+    ![epoches](images/drift_detection_epochs_400.png)
 
 
-## Stock Price Prediction Using Linear Regression to Enhance Understanding of Data Drift
-![linear_regression_drift](images/linear_regression.png)
+
 
 
 
