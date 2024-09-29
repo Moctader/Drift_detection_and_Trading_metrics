@@ -9,8 +9,8 @@ This repository demonstrates the use of an LSTM (Long Short-Term Memory) model t
 
 **Concept Drift vs. Model Drift**: Model drift is the decrease in model quality without a specified cause. Concept drift implies a change in the learned relationships. Model drift is often caused by concept drift.
 
-**Drift Detection Algorithm Strengths and Weaknesses**
-![d_algo](images/comparison_between_drift_algorithms.png)
+- **Drift Detection Algorithm Strengths and Weaknesses**
+      ![n_algo](images/comparison_between_drift_algorithom.png)
 
 
 ## Overview
