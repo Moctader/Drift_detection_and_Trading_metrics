@@ -58,7 +58,7 @@ X_test, y_test = X[train_size:], y[train_size:]
 
 # Train the model
 history = model.fit(X_train, y_train, validation_data=(X_test, y_test),
-                    epochs=100, batch_size=64, callbacks=[early_stop], verbose=1)
+                    epochs=10, batch_size=64, callbacks=[early_stop], verbose=1)
 
 # Step 6: Make Predictions
 train_predict = model.predict(X_train)
@@ -76,15 +76,15 @@ test_rmse = np.sqrt(mean_squared_error(y_test_actual, test_predict))
 print(f"Train RMSE: {train_rmse}, Test RMSE: {test_rmse}")
 
 # Step 8: Create Trading Signals Based on Moving Averages
-# Combine train and test predictions for overall analysis
 predicted_prices = np.concatenate((train_predict, test_predict), axis=0)
+
 
 # Create a DataFrame with predicted prices
 predicted_prices_df = pd.DataFrame(predicted_prices, columns=['Predicted Price'])
 
 # Define moving average windows
-fast_window = 5  # Fast moving average window (short-term)
-slow_window = 20  # Slow moving average window (long-term)
+fast_window = 20  
+slow_window = 40  
 
 # Calculate moving averages
 predicted_prices_df['Fast_MA'] = predicted_prices_df['Predicted Price'].rolling(window=fast_window).mean()
@@ -98,7 +98,7 @@ predicted_prices_df['Signal'] = np.where(predicted_prices_df['Fast_MA'].shift(1)
                                          predicted_prices_df['Signal'])  # -1 for sell
 
 # Step 9: Align signals with actual predictions
-signals = predicted_prices_df['Signal'].fillna(0).values  # Fill NaN values with 0 for initial rows
+signals = predicted_prices_df['Signal'].fillna(0).values  
 
 # Step 10: Visualize Actual vs Predicted Prices and Signals
 plt.figure(figsize=(14, 7))
