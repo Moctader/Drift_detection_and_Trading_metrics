@@ -103,3 +103,12 @@ plt.xlabel('Date')
 plt.ylabel('Price')
 plt.legend()
 plt.show()
+
+# Plot the max drawdown in a separate figure
+plt.figure(figsize=(14, 7))
+plt.plot(predicted_prices_df.index, predicted_prices_df['Max Drawdown'], label='Max Drawdown', color='purple', linestyle='--')
+plt.title('Max Drawdown of Predicted Prices')
+plt.xlabel('Date')
+plt.ylabel('Max Drawdown')
+plt.legend()
+plt.show()
