@@ -51,10 +51,10 @@ The following metrics are used to evaluate the LSTM model's prediction performan
 ### Outputs
 
 - **Results based on different epoches and the drift algorithoms**:.
-    ![epoches](images/drift_detection_epochs_50.png)
-    ![epoches](images/drift_detection_epochs_100.png)
-    ![epoches](images/drift_detection_epochs_150.png)
-    ![epoches](images/drift_detection_epochs_400.png)
+    ![n_epoches](images/drift_detection_epochs_50.png)
+    ![n_epoches](images/drift_detection_epochs_100.png)
+    ![n_epoches](images/drift_detection_epochs_150.png)
+    ![n_epoches](images/drift_detection_epochs_400.png)
 
 
 
