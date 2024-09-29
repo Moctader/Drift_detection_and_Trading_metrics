@@ -1,6 +1,6 @@
 # Stock Price Prediction and Drift Detection using LSTM
 
-This repository demonstrates the use of an LSTM (Long Short-Term Memory) model to predict Apple's stock prices (AAPL) and detect performance drift, distribution drift detection, and trading over time using various drift detection algorithms such as Page-Hinkley, ADWIN, and KSWIN.
+This repository demonstrates the use of an LSTM (Long Short-Term Memory) model to predict Apple's stock prices (AAPL) and detect performance drift, distribution drift detection, and trading over time using various drift detection algorithms such as Page-Hinkley, ADWIN, KSWIN, and Evidently AI.
 
 
 ## Prerequisites
@@ -77,7 +77,7 @@ feature_distribution_visualization /aapl_data_synthetic_data_evidently.py demons
 
 The script performs the following tasks:
 1. Fetches AAPL stock data from Yahoo Finance.
-2. Preprocesses the data (e.g., calculates differences, applies Min-Max scaling).
+2. Preprocesses the data (calculates differences, applies Min-Max scaling).
 3. Generates synthetic data that mimics the stock data.
 4. Introduces drift in the synthetic prediction data.
 5. Evaluates drift using Evidently AI.
@@ -99,7 +99,7 @@ This script visualizes the original stock data, processed data, synthetic data, 
 
 # Stock Price Prediction and Trading Signal Generation using LSTM
 
-This project demonstrates the use of Long Short-Term Memory (LSTM) neural networks to predict stock prices and generate trading signals based on performance metrics. The project uses historical stock data for Apple Inc. (AAPL) and includes the following steps:
+Trading_metric/main.py demonstrates the use of Long Short-Term Memory (LSTM) neural networks to predict stock prices and generate trading signals based on performance metrics. The project uses historical stock data for Apple Inc. (AAPL) and includes the following steps:
 
 1. **Data Preprocessing**: Fetching and cleaning historical stock data.
 2. **LSTM Model Training**: Building and training an LSTM model to predict future stock prices.
