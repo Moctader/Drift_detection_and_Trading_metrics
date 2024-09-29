@@ -2,6 +2,17 @@
 
 This repository demonstrates the use of an LSTM (Long Short-Term Memory) model to predict Apple's stock prices (AAPL) and detect performance drift, distribution drift detection, and trading over time using various drift detection algorithms such as Page-Hinkley, ADWIN, and KSWIN.
 
+
+## Prerequisites
+
+**Concept Drift** is a change in the relationship between the input data and the model target. It reflects the evolution of the underlying problem statement or process over time. Simply put, whatever you are trying to predict – it’s changing.[P(Y|X)]
+
+**Concept Drift vs. Model Drift**: Model drift is the decrease in model quality without a specified cause. Concept drift implies a change in the learned relationships. Model drift is often caused by concept drift.
+
+**Drift Detection Algorithm Strengths and Weaknesses**
+![d_algo](images/comparison_between_drift_algorithms.png)
+
+
 ## Overview
 
 feature_distribution_visualization /comparison_between_epochs_different_drift.py uses an LSTM model to make stock price predictions and analyzes model performance over time. Drift detection algorithms are used to identify periods where the model's prediction errors exceed a reference deviation, signaling changes in stock price behavior and model underperformance.
@@ -84,54 +95,22 @@ This script visualizes the original stock data, processed data, synthetic data, 
 
 
 
-## Trading Metrics
+## Trading 
 
-## Overview
-Trading_metric/trading_metrics.py fetching stock data, processing it, generating technical indicators, and running a backtest using Vectorbt. It calculates key trading metrics such as Sharpe Ratio and visualizes indicators like Moving Averages, RSI, and MACD.
+# Stock Price Prediction and Trading Signal Generation using LSTM
 
-## Workflow
+This project demonstrates the use of Long Short-Term Memory (LSTM) neural networks to predict stock prices and generate trading signals based on performance metrics. The project uses historical stock data for Apple Inc. (AAPL) and includes the following steps:
 
-1. **Data Collection**: 
-   - Fetch stock data from an API using asyncio and requests.
+1. **Data Preprocessing**: Fetching and cleaning historical stock data.
+2. **LSTM Model Training**: Building and training an LSTM model to predict future stock prices.
+3. **Performance Metrics Calculation**: Calculating rolling performance metrics such as Sharpe ratio, Sortino ratio, CAGR, Total Return, Max Drawdown, and YTD performance.
+4. **Trading Signal Generation**: Generating buy and sell signals based on the calculated performance metrics.
+5. **Visualization**: Plotting the actual and predicted stock prices, trading signals, and max drawdown.
 
-2. **Data Processing**: 
-   - Normalize stock data and clean missing values.
-
-3. **Technical Indicators**: 
-   - Generate EMA, RSI, and MACD using Vectorbt.
-
-4. **Backtesting**: 
-   - Run a trading strategy based on moving average crossovers.
-
-5. **Trading Metrics**: 
-   - Calculate Total Return, Max Drawdown, Volatility, Sharpe Ratio, and Sortino Ratio.
-
-6. **Visualization**: 
-   - Plot stock prices, moving averages, entry/exit points, RSI, and MACD.
 
 ### Outputs
-![trading](images/Trading.png)
+![n_trading](images/trading_signal.png)
+![n_trading](images/max_drawdown.png)
 
 
-## Feature distribution visualization using evidently
-## Overview
 
-feature_distribution_visualization/evalute_drift_with_evidently.py ingests time series data from an API, preprocesses it, trains a predictive model, and evaluates drift between historical and current data using various statistical tests. The drift metrics include:
-- Kolmogorov-Smirnov (KS) Test
-- Population Stability Index (PSI)
-- Kullback-Leibler Divergence (KL Divergence)
-- Jensen-Shannon Divergence
-- Wasserstein Distance
-
-### Outputs
-![open](images/open.png)
-![close](images/close.png)
-
-### Statest test
-![stat](images/stat.png)
-
-
-## Reason for unable to use stock splits
-I noticed that after stock splits, the price of the stock should typically decrease due to the proportional adjustment. However, in many cases, the share price increased following the split. This makes the dataset more challenging to use as a reference for drift detection because the expected price behavior doesn't align with the general stock split mechanism.
-
-![stock](images/stock_split.png)
