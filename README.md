@@ -42,7 +42,7 @@ The following metrics are used to evaluate the LSTM model's prediction performan
 - **Drift Points**: The points where drift detection algorithms identified significant changes in the model's performance.
 
 
-## Visualization**:
+## Visualization:
    The plots include:
    - Actual vs. Predicted stock prices for both reference and current periods.
    - Drift detection points marked on the plots where each algorithm detected a drift.
@@ -79,8 +79,8 @@ This script visualizes the original stock data, processed data, synthetic data, 
 ![evidently](images/evidently_supply.png)
 
 ### Distrubtion for prediction and target
-![evidently](images/Evidently_prediction.png)
-![evidently](images/evidently_target.png)
+![n_evidently](images/Evidently_prediction.png)
+![n_evidently](images/evidently_target.png)
 
 
 
