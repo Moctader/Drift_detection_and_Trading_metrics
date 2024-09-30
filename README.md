@@ -33,9 +33,41 @@ Recurring concept drift, meaning pattern changes that happen repeatedly or follo
 
 **Page-Hinkley (PH)** Page-Hinkley is a sequential analysis technique primarily used for detecting abrupt changes (drift) in the average of a signal. It was originally designed for quality control but is now adapted to concept drift detection in machine learning models.
 
-**ADWIN (Adaptive Windowing)**ADWIN is a robust algorithm designed for detecting both abrupt and gradual drifts in a data stream. It is a sliding window-based method that automatically adjusts its window size based on the presence of drift.
+**ADWIN (Adaptive Windowing)** ADWIN is a robust algorithm designed for detecting both abrupt and gradual drifts in a data stream. It is a sliding window-based method that automatically adjusts its window size based on the presence of drift.
 
 **KSWIN (Kolmogorov-Smirnov Windowing)** KSWIN is a non-parametric drift detection algorithm based on the Kolmogorov-Smirnov (K-S) test, which measures the distance between two probability distributions. It is designed for detecting changes in data distribution using statistical hypothesis testing.
+
+
+
+# Concept Drift Detection Methods
+
+Concept drift occurs when the statistical properties of the target variable, which the model is predicting, change over time. Detecting concept drift is crucial for maintaining the performance of machine learning models. This document outlines several effective methods for detecting concept drift.
+
+## Methods
+
+### 1. Monitor Model Quality Metrics
+    Track key performance metrics such as accuracy, precision, recall, and F1-score.
+    A significant drop in these metrics can indicate that concept drift is occurring.
+
+### 2. Use Proxy Metrics
+   Observe changes in the distribution of predictions and predicted probabilities.
+   These metrics can serve as early warning signs of potential drift.
+
+### 3. Statistical Tests
+   Apply statistical tests like the Kolmogorov-Smirnov test or Chi-Square test.
+   Compare current data distributions with historical distributions to detect drift.
+
+### 4. Distance Metrics
+   Measure the differences between distributions using metrics like Wasserstein Distance or Population Stability Index (PSI).
+   A breach of predefined thresholds indicates possible drift.
+
+### 5. Rule-Based Checks
+   Set specific rules to trigger alerts for significant changes, such as the percentage of predictions within a specific class. Helps in timely detection and response to potential drift.
+
+### 6. Correlation Analysis
+   Evaluate shifts in correlations between input features and model predictions using correlation coefficients.
+   Significant changes in correlation may signal meaningful shifts in the underlying data patterns.
+
 
 
 
