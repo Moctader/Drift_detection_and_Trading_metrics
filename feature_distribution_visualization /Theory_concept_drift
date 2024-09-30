@@ -1,0 +1,31 @@
+Here's the relationship to detect concept drift:
+
+1. Reference Data (Historical Data)
+This represents the data used during the training phase of the model. The model was fitted on this data, and its patterns (features-target relationships) were learned.
+
+Role in Drift Detection:
+The reference data is your baseline or expected distribution of data and target. You will compare the current data and predictions against this baseline to check for changes.
+2. Current Data
+This represents the new, incoming data on which the model is making predictions. This data might come from a different time period, user behavior, or system changes, and it may no longer follow the distribution of the reference data.
+
+Role in Drift Detection:
+The statistical comparison between the current data and reference data helps in detecting changes (drift) in feature distributions or target variables.
+3. Model
+This is the machine learning model trained on the reference data. It learned the relationships between the input features and the target variable.
+
+Role in Drift Detection:
+The model is used to make predictions on both reference and current data. The comparison of model performance or feature importance between the two datasets can highlight drift.
+Monitoring model performance over time is critical. If accuracy, precision, or other metrics start to degrade, it could signal concept drift.
+4. Predictions
+The output of the model (on both reference and current data). These predictions, when compared to actual outcomes, can reveal issues if the model is consistently wrong or less accurate than before.
+
+Role in Drift Detection:
+Compare predictions on reference vs. current data. For example, if the model was making correct predictions on the reference data but performs poorly on current data, it signals potential drift.
+Prediction error distribution: Changes in the error distribution (e.g., increasing prediction errors) may indicate drift.
+
+
+
+
+
+## performance based
+## Distribution bassed

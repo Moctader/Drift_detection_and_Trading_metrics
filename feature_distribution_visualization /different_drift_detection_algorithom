@@ -1,0 +1,24 @@
+1. Page-Hinkley (PH)
+What it does: Page-Hinkley detects drift by monitoring the cumulative sum of prediction errors over time. It checks for significant increases in the average error, which indicates concept drift.
+How it works: It calculates the running sum of errors and signals drift when this sum exceeds a certain threshold. This makes it suitable for gradual drifts in the data.
+Strengths: Ideal for detecting small or gradual changes in the data distribution.
+Weaknesses: Less sensitive to abrupt or sudden changes.
+
+
+
+2. ADWIN (Adaptive Windowing)
+What it does: ADWIN detects drift by maintaining a dynamically sized sliding window. It continuously compares older data with more recent data within this window.
+How it works: If the statistical difference between two parts of the window is significant (based on distribution changes), ADWIN shrinks the window and signals drift.
+Strengths: Automatically adjusts window size, making it adaptive to different data speeds and suitable for both abrupt and gradual drifts.
+Weaknesses: Can be computationally expensive when handling very large datasets.
+
+
+
+4. KSWIN (Kolmogorov-Smirnov Test)
+What it does: KSWIN is a statistical drift detector that compares two samples' distributions (the recent window vs. a reference window) using the Kolmogorov-Smirnov test.
+How it works: It uses this test to detect if the recent sample (current data) deviates significantly from the previous sample (older data). When the difference between distributions crosses a significance threshold, drift is detected.
+Strengths: Non-parametric and does not make assumptions about the data's distribution. Effective in detecting both sudden and gradual drift.
+Weaknesses: It may not perform well if the underlying distribution has too much variance.
+
+
+![alt text](comparison_between_drift_algorithom.png)
