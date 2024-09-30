@@ -7,10 +7,36 @@ This repository demonstrates the use of an LSTM (Long Short-Term Memory) model t
 
 **Concept Drift** is a change in the relationship between the input data and the model target. It reflects the evolution of the underlying problem statement or process over time. Simply put, whatever you are trying to predict – it’s changing.[P(Y|X)]
 
+**Types of concept drift**
+There are different types of concept drift patterns one can observe in production. Let’s dive into those and explore some examples.
+
+**Gradual concept drift**
+When referring to “drift,” we usually expect a gradual change. After all, this is what the word itself means – a slow change or movement. This is the most frequent type of drift indeed. Gradual drift happens when the underlying data patterns change over time. 
+
+![gradual](images/gradual_drift.png)
+
+**Sudden concept drift**
+Sudden concept drift is the opposite: an abrupt and unexpected change in the model environment. 
+
+![sudden](images/sudden_concept_drift.png)
+
+**Recurring concept drift**
+Recurring concept drift, meaning pattern changes that happen repeatedly or follow a cycle. 
+
+![Recurring](images/Recuring_concept_drift.png)
+
 **Concept Drift vs. Model Drift**: Model drift is the decrease in model quality without a specified cause. Concept drift implies a change in the learned relationships. Model drift is often caused by concept drift.
+
 
 - **Drift Detection Algorithm Strengths and Weaknesses**
       ![n_algo](images/comparison_between_drift_algorithom.png)
+
+**Page-Hinkley (PH)** Page-Hinkley is a sequential analysis technique primarily used for detecting abrupt changes (drift) in the average of a signal. It was originally designed for quality control but is now adapted to concept drift detection in machine learning models.
+
+**ADWIN (Adaptive Windowing)**ADWIN is a robust algorithm designed for detecting both abrupt and gradual drifts in a data stream. It is a sliding window-based method that automatically adjusts its window size based on the presence of drift.
+
+**KSWIN (Kolmogorov-Smirnov Windowing)** KSWIN is a non-parametric drift detection algorithm based on the Kolmogorov-Smirnov (K-S) test, which measures the distance between two probability distributions. It is designed for detecting changes in data distribution using statistical hypothesis testing.
+
 
 
 ## Overview
