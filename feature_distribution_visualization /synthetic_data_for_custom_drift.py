@@ -22,15 +22,20 @@ scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data = scaler.fit_transform(data['Differenced'].dropna().values.reshape(-1, 1))
 
 sequence_length = 60  # We use the last 60 days to predict the next day
-x_train, y_train = [], []
+x, y = [], []
 for i in range(sequence_length, len(scaled_data)):
-    x_train.append(scaled_data[i-sequence_length:i, 0])
-    y_train.append(scaled_data[i, 0])
+    x.append(scaled_data[i-sequence_length:i, 0])
+    y.append(scaled_data[i, 0])
 
-x_train, y_train = np.array(x_train), np.array(y_train)
-x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))  # Reshape for LSTM
+x, y = np.array(x), np.array(y)
+x = np.reshape(x, (x.shape[0], x.shape[1], 1))  # Reshape for LSTM
 
-# Step 4: Build the LSTM Model
+# Step 4: Split the data into 70% training and 30% testing
+split_index = int(len(x) * 0.7)
+x_train, x_test = x[:split_index], x[split_index:]
+y_train, y_test = y[:split_index], y[split_index:]
+
+# Step 5: Build and Train the LSTM Model on 70% of the data
 model = Sequential()
 model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
 model.add(Dropout(0.2))
@@ -42,32 +47,33 @@ model.add(Dense(units=1))  # Output layer
 model.compile(optimizer='adam', loss='mean_squared_error')
 model.fit(x_train, y_train, batch_size=32, epochs=10)
 
-# Step 5: Make Predictions
-predicted_prices = model.predict(x_train)
+# Step 6: Make Predictions on the remaining 30% test data
+predicted_prices = model.predict(x_test)
 predicted_prices = scaler.inverse_transform(predicted_prices)  # Rescale to original prices
 
 # Align the data with the predictions
-aligned_data = data.iloc[sequence_length + 1:]  # Adjust for differencing and sequence length
+aligned_test_data = data.iloc[split_index + sequence_length:]  # Adjust for differencing and sequence length
 
 # Add the differenced component back to the predicted prices to get the final predictions
-final_predicted_prices = predicted_prices.flatten() + data['Close'].shift(1).iloc[sequence_length + 1:].values
+final_predicted_prices = predicted_prices.flatten() + data['Close'].shift(1).iloc[split_index + sequence_length + 1:].values
 
 # Ensure the lengths of aligned_data['Date'] and final_predicted_prices match
-aligned_data = aligned_data.iloc[-len(final_predicted_prices):]
+aligned_test_data = aligned_test_data.iloc[-len(final_predicted_prices):]
 
 # Plot the predicted vs actual prices
 plt.figure(figsize=(10, 6))
-plt.plot(aligned_data['Date'], aligned_data['Close'], label='Actual Stock Price', color='blue')
-plt.plot(aligned_data['Date'], final_predicted_prices, label='Predicted Stock Price', color='red')
-plt.title('LSTM Apple Stock Price Prediction')
+plt.plot(aligned_test_data['Date'], aligned_test_data['Close'], label='Actual Stock Price', color='blue')
+plt.plot(aligned_test_data['Date'], final_predicted_prices, label='Predicted Stock Price', color='red')
+plt.title('LSTM Apple Stock Price Prediction (30% Test Data)')
 plt.xlabel('Date')
 plt.ylabel('Price (USD)')
 plt.legend()
 plt.show()
 
-# Step 6: Prepare data for drift detection
-aligned_dates = aligned_data['Date'].values[-len(final_predicted_prices):]
-aligned_original = aligned_data['Close'].values[-len(final_predicted_prices):]
+
+# Step 7: Prepare data for drift detection
+aligned_dates = aligned_test_data['Date'].values
+aligned_original = aligned_test_data['Close'].values
 
 drift_data = pd.DataFrame({
     'Date': aligned_dates,
@@ -75,32 +81,25 @@ drift_data = pd.DataFrame({
     'Prediction': final_predicted_prices
 }).dropna()
 
-# Split the data into reference and current datasets
-split_index = len(drift_data) // 2
+# Step 8: Split reference and current data based on the initial 70/30 split
+# The training set is the reference (70%) and the test set is the current (30%)
 reference_data = drift_data[:split_index]
 current_data = drift_data[split_index:]
 
-# Plot reference and current data
-plt.figure(figsize=(10, 6))
-plt.plot(reference_data['Date'], reference_data['Original'], label='Reference Actual', color='blue')
-plt.plot(reference_data['Date'], reference_data['Prediction'], label='Reference Predicted', color='orange')
-plt.plot(current_data['Date'], current_data['Original'], label='Current Actual', color='green')
-plt.plot(current_data['Date'], current_data['Prediction'], label='Current Predicted', color='red')
-plt.title('Reference and Current Data')
-plt.xlabel('Date')
-plt.ylabel('Price (USD)')
-plt.legend()
-plt.show()
 
 # Step 7: Define performance metrics
 def calculate_metrics(detected_drifts, actual_drifts, total_points):
+    if len(actual_drifts) == 0:
+        return 0, 0, 0, 0  # Avoid division by zero
+
     detection_rate = len(detected_drifts & actual_drifts) / len(actual_drifts)
     false_negative_rate = len(actual_drifts - detected_drifts) / len(actual_drifts)
     false_positive_rate = len(detected_drifts - actual_drifts) / (total_points - len(actual_drifts))
     detection_delay = np.mean([min(abs(d - a) for a in actual_drifts) for d in detected_drifts])
     return detection_rate, false_negative_rate, false_positive_rate, detection_delay
 
-# Step 8: Evaluate algorithms with different configurations
+
+# Step 10: Evaluate algorithms with different configurations
 def evaluate_drift_detection(ref_actual, ref_predicted, curr_actual, curr_predicted, data, window_size, split_index):
     detectors = {
         "Page-Hinkley": [PageHinkley()],
@@ -109,7 +108,6 @@ def evaluate_drift_detection(ref_actual, ref_predicted, curr_actual, curr_predic
     }
 
     best_configurations = {}
-    total_points = len(curr_actual)
 
     for detector_name, configs in detectors.items():
         best_metrics = None
@@ -117,12 +115,18 @@ def evaluate_drift_detection(ref_actual, ref_predicted, curr_actual, curr_predic
 
         for config in configs:
             detected_drifts = set()
-            for idx, (actual, predicted) in enumerate(zip(curr_actual, curr_predicted)):
-                error = abs(actual - predicted)
-                config.update(error)
-                if config.drift_detected:
-                    detected_drifts.add(split_index + idx)
+            try:
+                for idx, (actual, predicted) in enumerate(zip(curr_actual, curr_predicted)):
+                    error = abs(actual - predicted)
+                    config.update(error)
+                    if config.drift_detected:
+                        detected_drifts.add(split_index + idx)
+            except Exception as e:
+                print(f"Error with config {config}: {e}")
+                continue  # Move to the next configuration if an error occurs
 
+            total_points = len(detected_drifts)
+            print(f"Detector: {detector_name}, Config: {config}, Drift Points: {total_points}")  
             metrics = calculate_metrics(detected_drifts, detected_drifts, total_points)
             if best_metrics is None or metrics < best_metrics:
                 best_metrics = metrics
@@ -131,7 +135,8 @@ def evaluate_drift_detection(ref_actual, ref_predicted, curr_actual, curr_predic
         best_configurations[detector_name] = (best_config, best_metrics)
 
     return best_configurations
-# Step 9: Plot drift points for each detector (updated)
+
+# Step 11: Plot drift points for each detector
 def plot_drift_points(drift_results, data, window_size, split_index, title):
     ref_dates = data['Date'][:split_index]
     curr_dates = data['Date'][split_index:]
@@ -157,7 +162,7 @@ def plot_drift_points(drift_results, data, window_size, split_index, title):
     plt.legend()
     plt.show()
 
-# Example usage
+# Example usage of drift detection evaluation and plotting
 ref_actual = reference_data['Original'].values
 ref_predicted = reference_data['Prediction'].values
 curr_actual = current_data['Original'].values
@@ -180,9 +185,8 @@ for idx, (actual, predicted) in enumerate(zip(curr_actual, curr_predicted)):
     for detector_name, detector in detectors.items():
         detector.update(error)
         if detector.drift_detected:
-            if split_index + idx < len(dates):
-                drift_results[detector_name]['dates'].append(dates[idx])
-                drift_results[detector_name]['values'].append(predicted)
+            drift_results[detector_name]['dates'].append(dates[idx])
+            drift_results[detector_name]['values'].append(predicted)
 
 # Evaluate drift detection
 best_configurations = evaluate_drift_detection(ref_actual, ref_predicted, curr_actual, curr_predicted, drift_data, window_size=60, split_index=split_index)
@@ -195,12 +199,4 @@ for detector_name, (config, _) in best_configurations.items():
         config.update(error)
         if config.drift_detected:
             best_drift_results[detector_name]['dates'].append(current_data['Date'].iloc[idx])
-            best_drift_results[detector_name]['values'].append(predicted)
-
-plot_drift_points(best_drift_results, drift_data, window_size=60, split_index=split_index, title='Drift Detection in Stock Price Predictions (Best Configuration)')
-
-
-
-
-
-
+           
