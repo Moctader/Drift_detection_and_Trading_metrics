@@ -41,7 +41,7 @@ Recurring concept drift, meaning pattern changes that happen repeatedly or follo
 
 # Concept Drift Detection Methods
 
-Concept drift occurs when the statistical properties of the target variable, which the model is predicting, change over time. Detecting concept drift is crucial for maintaining the performance of machine learning models. This document outlines several effective methods for detecting concept drift.
+   Concept drift occurs when the statistical properties of the target variable, which the model is predicting, change over time. Detecting concept drift is crucial for maintaining the performance of machine learning models. This document outlines several effective methods for detecting concept drift.
 
 ## Methods
 
