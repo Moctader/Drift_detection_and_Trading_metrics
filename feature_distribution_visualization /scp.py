@@ -2,6 +2,38 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from river.drift import PageHinkley, ADWIN, KSWIN
+from typing import List
+
+class SPC:
+    def __init__(self, delta: int, window: int = 20, minPoints: int = 10):
+        self.delta = delta
+        self.window = window
+        self.minPoints = minPoints
+        self.pointList = []
+        self.sigma = 0
+        self.upperBound = 0
+        self.lowerBound = 0
+        self.processMean = 0
+
+    def calculate_stats(self, datastream: np.array) -> None:
+        """Calculate the mean, standard deviation, and bounds of the datastream."""
+        self.processMean = datastream.mean()
+        self.sigma = datastream.std()
+        self.upperBound = self.processMean + self.delta * self.sigma
+        self.lowerBound = self.processMean - self.delta * self.sigma
+
+    def add_element(self, datastream: np.array) -> List:
+        """Test each datapoint inside datastream against upper and lower bound and store results in pointList."""
+        self.calculate_stats(datastream)
+        self.pointList = np.logical_or(datastream <= self.lowerBound, datastream >= self.upperBound)
+        return self.pointList
+
+    def detected_change(self) -> bool:
+        """Test whether a certain number of points fall outside upper and lower bound within a certain number of days."""
+        num_errors = np.sum(np.lib.stride_tricks.sliding_window_view(self.pointList, window_shape=(self.window,)), axis=1)
+        drift_comparasion = num_errors >= self.minPoints
+        drift_region = np.nonzero(drift_comparasion)
+        return drift_comparasion, drift_region
 
 # Generate synthetic reference data (without drift)
 np.random.seed(0)
@@ -58,17 +90,24 @@ def evaluate_drift_detection(curr_actual, curr_predicted, actual_drifts):
     detectors = {
         "Page-Hinkley": PageHinkley(min_instances=30, threshold=0.001),  # Lowered threshold for sensitivity
         "ADWIN": ADWIN(delta=0.09),  # More sensitive
-        "KSWIN": KSWIN(alpha=0.1)   # Lowered alpha for better detection
+        "KSWIN": KSWIN(alpha=0.1),   # Lowered alpha for better detection
+        "SPC": SPC(delta=30, window=20, minPoints=10)  # SPC detector
     }
 
     detected_drifts = {name: [] for name in detectors.keys()}
 
     for detector_name, detector in detectors.items():
-        for idx, (actual, predicted) in enumerate(zip(curr_actual, curr_predicted)):
-            error = abs(actual - predicted)
-            detector.update(error)
-            if detector.drift_detected:
-                detected_drifts[detector_name].append(idx)
+        if detector_name == "SPC":
+            # Use SPC specific methods
+            detector.add_element(curr_predicted)
+            _, drift_region = detector.detected_change()
+            detected_drifts[detector_name] = drift_region[0].tolist()
+        else:
+            for idx, (actual, predicted) in enumerate(zip(curr_actual, curr_predicted)):
+                error = abs(actual - predicted)
+                detector.update(error)
+                if detector.drift_detected:
+                    detected_drifts[detector_name].append(idx)
 
     results = {}
     total_points = len(curr_actual)  # Total number of points in the current data
@@ -98,7 +137,7 @@ def plot_drift_points(curr_actual, curr_predicted, detected_drifts, actual_drift
     plt.plot(curr_actual, label='Current Actual Data', color='green', alpha=0.6)  # Increased opacity
     plt.plot(curr_predicted, label='Current Predicted Data', color='red', alpha=0.6)  # Increased opacity
 
-    colors = ['purple', 'magenta', 'cyan']
+    colors = ['purple', 'magenta', 'cyan', 'orange']
     for i, (detector_name, drifts) in enumerate(detected_drifts.items()):
         if drifts:
             plt.scatter(drifts, curr_actual[drifts], color=colors[i], label=f'{detector_name} Drift Points', s=100, alpha=0.7)  # Increased opacity
