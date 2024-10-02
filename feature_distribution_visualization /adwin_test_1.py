@@ -8,7 +8,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from evidently.report import Report
 from evidently.metrics import ColumnDriftMetric
-from river.drift import PageHinkley
+from river.drift import ADWIN
 from sklearn.metrics import mean_absolute_error
 
 # Step 1: Fetch Apple Stock Data Using yfinance
@@ -58,18 +58,7 @@ final_predicted_prices = predicted_prices.flatten() + data['Close'].shift(1).ilo
 # Ensure the lengths of aligned_data['Date'] and final_predicted_prices match
 aligned_data = aligned_data.iloc[-len(final_predicted_prices):]
 
-# # Plot the predicted vs actual prices
-# plt.figure(figsize=(10, 6))
-# plt.plot(aligned_data['Date'], aligned_data['Close'], label='Actual Stock Price', color='blue')
-# plt.plot(aligned_data['Date'], final_predicted_prices, label='Predicted Stock Price', color='red')
-# plt.title('LSTM Apple Stock Price Prediction')
-# plt.xlabel('Date')
-# plt.ylabel('Price (USD)')
-# plt.legend()
-# plt.show()
-
 # Step 6: Prepare data for Evidently
-# Ensure the lengths of the arrays are the same
 aligned_dates = aligned_data['Date'].values[-len(final_predicted_prices):]
 aligned_original = aligned_data['Close'].values[-len(final_predicted_prices):]
 
@@ -84,37 +73,7 @@ split_index = len(drift_data) // 2
 reference_data = drift_data[:split_index]
 current_data = drift_data[split_index:]
 
-# # Plot Differenced Reference Data
-# plt.figure(figsize=(14, 7))
-# plt.plot(reference_data['Date'], reference_data['Original'], label='Differenced Reference Original', color='blue')
-# plt.plot(reference_data['Date'], reference_data['Prediction'], label='Differenced Reference Prediction', color='orange')
-# plt.title('Differenced Reference Data: Original vs Prediction')
-# plt.xlabel('Date')
-# plt.ylabel('Price (USD)')
-# plt.legend()
-# plt.show()
-
-# # Plot Differenced Current Data
-# plt.figure(figsize=(14, 7))
-# plt.plot(current_data['Date'], current_data['Original'], label='Differenced Current Original', color='green')
-# plt.plot(current_data['Date'], current_data['Prediction'], label='Differenced Current Prediction', color='red')
-# plt.title('Differenced Current Data: Original vs Prediction')
-# plt.xlabel('Date')
-# plt.ylabel('Price (USD)')
-# plt.legend()
-# plt.show()
-
-# Step 7: Set up the Evidently Report for target and prediction drift detection
-report = Report(metrics=[
-    ColumnDriftMetric(column_name="Original", stattest="ks", stattest_threshold=0.05),
-    ColumnDriftMetric(column_name="Prediction", stattest="ks", stattest_threshold=0.05)
-])
-
-# Generate data drift report
-report.run(reference_data=reference_data, current_data=current_data)
-report.save_html("concept_drift_report.html")
-
-# Step 8: Detect and Visualize Drift using Page-Hinkley
+# Step 8: Detect and Visualize Drift using ADWIN
 def detect_and_visualize_drift(ref_actual, ref_predicted, curr_actual, curr_predicted, data, window_size, split_index):
  
     # Calculate performance metrics
@@ -126,20 +85,20 @@ def detect_and_visualize_drift(ref_actual, ref_predicted, curr_actual, curr_pred
     ref_max_deviation = np.max(np.abs(ref_actual - ref_predicted))
     print(f"Reference Max Deviation: {ref_max_deviation}")
 
-    # Initialize Page-Hinkley Drift Detector
-    page_hinkley_detector = PageHinkley()
-    drift_results = {'Page-Hinkley': {'dates': [], 'values': []}}
+    # Initialize ADWIN Drift Detector
+    adwin_detector = ADWIN(delta=0.2)
+    drift_results = {'ADWIN': {'dates': [], 'values': []}}
     dates = data.index[window_size:]
     
     for idx, (actual, predicted) in enumerate(zip(curr_actual, curr_predicted)):
         error = abs(actual - predicted)
 
         # Update the detector with the error and log drift points
-        page_hinkley_detector.update(error)
-        if page_hinkley_detector.drift_detected:
+        adwin_detector.update(error)
+        if adwin_detector.drift_detected:
             if split_index + idx < len(dates):
-                drift_results['Page-Hinkley']['dates'].append(dates[split_index + idx])
-                drift_results['Page-Hinkley']['values'].append(predicted)
+                drift_results['ADWIN']['dates'].append(dates[split_index + idx])
+                drift_results['ADWIN']['values'].append(predicted)
 
     # Ensure the lengths of dates and actual/predicted values match
     ref_dates = dates[:split_index]
@@ -155,10 +114,10 @@ def detect_and_visualize_drift(ref_actual, ref_predicted, curr_actual, curr_pred
     plt.plot(curr_dates, curr_actual, label='Actual Stock Price (Current)', color='green')
     plt.plot(curr_dates, curr_predicted, label='Predicted Stock Price (Current)', color='red')
 
-    # Plot drift points for Page-Hinkley
-    if len(drift_results['Page-Hinkley']['dates']) > 0:
-        for drift_date in drift_results['Page-Hinkley']['dates']:
-            plt.axvline(x=drift_date, color='purple', linestyle='--', label='Page-Hinkley Drift')
+    # Plot drift points for ADWIN
+    if len(drift_results['ADWIN']['dates']) > 0:
+        for drift_date in drift_results['ADWIN']['dates']:
+            plt.axvline(x=drift_date, color='purple', linestyle='--', label='ADWIN Drift')
 
     plt.title('Drift Detection in Stock Price Predictions')
     plt.xlabel('Date')
@@ -166,7 +125,7 @@ def detect_and_visualize_drift(ref_actual, ref_predicted, curr_actual, curr_pred
     plt.legend()
     plt.show()
 
-# Example usage
+
 ref_actual = reference_data['Original'].values
 ref_predicted = reference_data['Prediction'].values
 curr_actual = current_data['Original'].values

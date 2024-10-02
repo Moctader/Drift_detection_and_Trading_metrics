@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from river.drift import PageHinkley
+from river.drift import ADWIN
 
 # Parameters
 segment_length = 100
@@ -12,8 +12,8 @@ buffer_zone = 5  # Buffer zone around known drift points
 data_segments = [np.random.normal(loc=50 + 20 * i, scale=5, size=segment_length) for i in range(num_segments)]
 drift_data = np.concatenate(data_segments)
 
-# Initialize Page-Hinkley drift detector
-ph_detector = PageHinkley(min_instances=5, threshold=140)  # Adjust sensitivity as needed
+# Initialize ADWIN drift detector with a sensitivity parameter
+adwin_detector = ADWIN(delta=0.9)  # Adjust delta as needed
 
 # Store drift points
 detected_drifts = []
@@ -21,8 +21,8 @@ false_alarms = 0
 
 # Evaluate detector on data with multiple drifts
 for i, val in enumerate(drift_data):
-    ph_detector.update(val)
-    if ph_detector.drift_detected:
+    adwin_detector.update(val)
+    if adwin_detector.drift_detected:
         # Check if the detected drift is within the buffer zone of any known drift point
         is_true_detection = any(abs(i - drift_point) <= buffer_zone for drift_point in drift_points)
         if is_true_detection:
@@ -30,8 +30,7 @@ for i, val in enumerate(drift_data):
         else:
             false_alarms += 1
             detected_drifts.append((i, 'false_alarm'))
-    # Debug print to understand the detection process
-    print(f'Index: {i}, Value: {val}, Drift Detected: {ph_detector.drift_detected}')
+    #print(f'Index: {i}, Value: {val}, Drift Detected: {adwin_detector.drift_detected}')
 
 print(f'Total Detected Drifts: {len(detected_drifts)}')
 print(f'False Alarms: {false_alarms}')

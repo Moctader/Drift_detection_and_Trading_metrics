@@ -61,7 +61,7 @@ def run_comparison_pipeline(window_size):
     print(f"Reference MAE: {ref_mae}, Current MAE: {curr_mae}")
 
     # Initialize Page-Hinkley for drift detection
-    ph = PageHinkley()
+    ph = PageHinkley(min_instances=45, threshold=140)
 
     # Detect drift points using Page-Hinkley
     drift_dates = []
