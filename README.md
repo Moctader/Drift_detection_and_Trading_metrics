@@ -5,7 +5,7 @@ This repository demonstrates the use of an LSTM (Long Short-Term Memory) model t
 
 ## Prerequisites
 
-**Concept Drift** is a change in the relationship between the input data and the model target. It reflects the evolution of the underlying problem statement or process over time. Simply put, whatever you are trying to predict – it’s changing.[P(Y|X)]
+**Concept Drift** is a change in the relationship between the input data and the model target. It reflects the evolution of the underlying problem statement or process over time. Simply put, whatever we are trying to predict – it’s changing.[P(Y|X)]
 
 **Types of concept drift**
 There are different types of concept drift patterns one can observe in production. Let’s dive into those and explore some examples.
@@ -46,7 +46,7 @@ Recurring concept drift, meaning pattern changes that happen repeatedly or follo
 ## Methods
 
 ### 1. Monitor Model Quality Metrics
-    Track key performance metrics such as accuracy, precision, recall, and F1-score. A significant drop in these metrics can indicate that concept drift is occurring.
+   Track key performance metrics such as accuracy, precision, recall, and F1-score. A significant drop in these metrics can indicate that concept drift is occurring.
 
 ### 2. Use Proxy Metrics
    Observe changes in the distribution of predictions and predicted probabilities.
@@ -109,9 +109,27 @@ The `Trading_strategy.py` script fetches historical stock data, preprocesses it,
 
 ### Outputs
 Number of predictions higher than the current value: 264
+
+---
+
 Average percentage growth for higher predictions: 2.84%
+
+---
+
 Sell opportunities found: 288
+
+---
+
 Average potential gain from sell opportunities: -0.61
+
+---
+
 Shares to buy: 50
+
+---
+
 Current price is not high enough to justify a sell.
+
+---
+
 Shares to sell: 0
