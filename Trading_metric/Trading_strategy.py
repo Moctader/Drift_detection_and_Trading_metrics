@@ -1,3 +1,4 @@
+# Import necessary libraries
 import ffn
 import yfinance as yf
 import pandas as pd
@@ -9,7 +10,7 @@ from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from keras.callbacks import EarlyStopping
 
-# Fetch stock data
+# Fetch stock data from Yahoo Finance
 ticker = 'AAPL'
 data = yf.download(ticker, start='2010-01-01', end='2023-01-01')
 
@@ -20,6 +21,7 @@ data = data.replace([np.inf, -np.inf], np.nan).dropna(subset=['Adj Close'])
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data = scaler.fit_transform(data['Adj Close'].values.reshape(-1, 1))
 
+# Create dataset function for LSTM
 def create_dataset(dataset, time_step=1):
     X, y = [], []
     for i in range(len(dataset) - time_step - 1):
@@ -27,6 +29,7 @@ def create_dataset(dataset, time_step=1):
         y.append(dataset[i + time_step, 0])
     return np.array(X), np.array(y)
 
+# Define time step for LSTM model
 time_step = 60
 X, y = create_dataset(scaled_data, time_step)
 X = X.reshape(X.shape[0], X.shape[1], 1)
@@ -88,7 +91,7 @@ def generate_signals(df):
 predicted_prices_df['Signal'] = generate_signals(predicted_prices_df)
 
 # Simulate trading strategy
-initial_investment = 10000  # Initial investment amount
+initial_investment = 10000  
 cash = initial_investment
 stock = 0
 portfolio_value = []
@@ -108,7 +111,7 @@ for i in range(len(predicted_prices_df)):
 
 predicted_prices_df['Portfolio Value'] = portfolio_value
 
-# Create a plot for stock prices with trading signals and Max Drawdown on a secondary y-axis
+# Plot stock prices with trading signals and Max Drawdown
 fig, ax1 = plt.subplots(figsize=(14, 7))
 
 # Plot actual and predicted stock prices on the primary y-axis
@@ -149,16 +152,9 @@ plt.ylabel('Portfolio Value')
 plt.legend()
 plt.show()
 
-# Calculate minimum capital to maintain
-minimum_capital = 1000  # Define the minimum capital to maintain in your portfolio
-
 ############################################################################################################
 
-'''
-How many of the models are predicting a higher value?
-What percentage of growth relative to the current value?
-'''
-# Assuming 'test_predict' contains the predicted prices and 'y_test_actual' contains actual prices
+# Calculate statistics for model predictions
 predicted_higher = test_predict > y_test_actual
 
 # 1. Count how many of the predictions are higher than the current value
@@ -176,17 +172,11 @@ print(f"Average percentage growth for higher predictions: {average_growth:.2f}%"
 
 ############################################################################################################
 
-'''
-What if the immediate future is lower, but distant future is higher?
-What if it's significantly higher?
-Is there an opportunity to sell now and buy back for more later?
-'''
-
-# Assuming 'test_predict' contains predicted prices and 'y_test_actual' contains actual prices
+# Identify sell and buyback opportunities based on future price predictions
 future_predictions = test_predict[1:]  # Future predictions (next time step)
 current_predictions = test_predict[:-1]  # Current predictions (current time step)
 
-# Identify opportunities
+# Identify sell opportunities (immediate future is lower)
 sell_opportunities = future_predictions < current_predictions
 buyback_opportunities = future_predictions > current_predictions
 
@@ -198,7 +188,7 @@ print(f"Sell opportunities found: {np.sum(sell_opportunities)}")
 print(f"Average potential gain from sell opportunities: {np.mean(potential_gains):.2f}")
 ############################################################################################################
 
-# Updated decision-making logic based on statistics
+# Trading Decision Logic Based on Statistics
 def calculate_statistics(prices):
     """
     Calculate statistical averages and standard deviations.
@@ -214,59 +204,50 @@ def calculate_statistics(prices):
     std_dev = prices.std()
     return mean_price, std_dev
 
-# Historical prices from your predicted data
+# Historical prices from predicted data
 historical_prices = predicted_prices_df['Predicted Price'][-30:]  # Last 30 days as an example
 
 # Calculate statistics
 mean_price, std_dev = calculate_statistics(historical_prices)
 
-# Trading Decision Based on Statistics
+# Decide shares to trade based on statistical conditions
 def decide_shares_to_trade(current_cash, stock_price, current_shares, action='buy', risk_management_pct=0.1, min_capital=1000, mean_price=None, std_dev=None):
     """
-    Decide how many shares to buy or sell based on current cash, stock price, and risk management,
-    while maintaining a minimum capital level and using statistical averages and standard deviations.
-    
-    Parameters:
-    - mean_price (float): Mean price for assessing overbought/oversold conditions.
-    - std_dev (float): Standard deviation for assessing volatility.
+    Decide how many shares to buy or sell based on cash, price, and risk management,
+    while maintaining a minimum capital level and using statistical averages.
     
     Returns:
     - shares_to_trade (int): Number of shares to buy or sell.
     """
-    
-    # Calculate usable cash after maintaining minimum capital
-    usable_cash = max(0, current_cash - min_capital)
+    usable_cash = max(0, current_cash - min_capital)  # Cash after maintaining minimum capital
     
     if action == 'buy':
-        # Determine if current price is significantly below the mean
-        if stock_price < (mean_price - std_dev):  # Example threshold for buying
+        # Determine if price is significantly below mean
+        if stock_price < (mean_price - std_dev):  
             amount_to_invest = usable_cash * risk_management_pct
-            shares_to_trade = int(amount_to_invest // stock_price)  # How many shares we can buy
+            shares_to_trade = int(amount_to_invest // stock_price)
         else:
             print("Current price is not low enough to justify a buy.")
             shares_to_trade = 0
             
     elif action == 'sell':
-        # Determine if current price is significantly above the mean
-        if stock_price > (mean_price + std_dev):  # Example threshold for selling
+        # Determine if price is significantly above mean
+        if stock_price > (mean_price + std_dev):
             shares_to_trade = int(current_shares * risk_management_pct)
         else:
             print("Current price is not high enough to justify a sell.")
             shares_to_trade = 0
-    else:
-        raise ValueError("Action must be 'buy' or 'sell'")
-
+    
     return shares_to_trade
 
-# Example usage
-current_cash = cash  # Your available cash
-current_price = predicted_prices_df['Predicted Price'].iloc[-1]  # Current stock price
-current_shares = stock  # Number of shares currently held
+current_cash = cash  
+current_price = predicted_prices_df['Predicted Price'].iloc[-1]  
+current_shares = stock  # Number of shares held
 
 # Decide to buy shares
-shares_to_buy = decide_shares_to_trade(current_cash, current_price, current_shares, action='buy', mean_price=mean_price, std_dev=std_dev, min_capital=minimum_capital)
+shares_to_buy = decide_shares_to_trade(current_cash, current_price, current_shares, action='buy', mean_price=mean_price, std_dev=std_dev, min_capital=1000)
 print(f"Shares to buy: {shares_to_buy}")
 
 # Decide to sell shares
-shares_to_sell = decide_shares_to_trade(current_cash, current_price, current_shares, action='sell', mean_price=mean_price, std_dev=std_dev, min_capital=minimum_capital)
+shares_to_sell = decide_shares_to_trade(current_cash, current_price, current_shares, action='sell', mean_price=mean_price, std_dev=std_dev, min_capital=1000)
 print(f"Shares to sell: {shares_to_sell}")
