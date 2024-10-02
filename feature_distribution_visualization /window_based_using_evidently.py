@@ -12,7 +12,7 @@ from sklearn.preprocessing import MinMaxScaler
 GREY = '#808080'
 RED = '#FF0000'
 
-def evaluare_drift(ref: pd.DataFrame, curr: pd.DataFrame):
+def evaluate_drift(ref: pd.DataFrame, curr: pd.DataFrame):
     report = Report(metrics=[
         ColumnDriftMetric(column_name="value", stattest="ks", stattest_threshold=0.05),
         ColumnDriftMetric(column_name="value", stattest="psi", stattest_threshold=0.1),
@@ -77,17 +77,17 @@ def run_pipeline(window_size=60):
     data = yf.download('AAPL', start='2020-01-01', end='2023-01-01')
     
     # 2. Preprocess Data
-    data = data[['Open', 'Close']]  # Use 'Open' and 'Close' prices
+    data = data[['Close']]  # Use 'Close' prices
     
     # MinMax Scaling
     scaler = MinMaxScaler()
-    data[['Open', 'Close']] = scaler.fit_transform(data[['Open', 'Close']])
+    data[['Close']] = scaler.fit_transform(data[['Close']])
     
     # Calculate log return
-    data['LogReturn'] = np.log(data['Close'] / data['Close'].shift(1)).dropna()
+    data['LogReturn'] = np.log(data['Close'] / data['Close'].shift(1))
     
     # Calculate difference between two days
-    data['Diff'] = data['Close'].diff().dropna()
+    data['Diff'] = data['Close'].diff()
     
     # Drop NaN values resulting from calculations
     data = data.dropna()
@@ -99,11 +99,11 @@ def run_pipeline(window_size=60):
         current_data = data.iloc[start+window_size:start+2*window_size]
 
         # Create windows
-        reference_windows = create_windows(reference_data, 'Open', window_size)
-        current_windows = create_windows(current_data, 'Open', window_size)
+        reference_windows = create_windows(reference_data, 'LogReturn', window_size)
+        current_windows = create_windows(current_data, 'LogReturn', window_size)
 
         # Evaluate Drift
-        drift_report = evaluare_drift(reference_windows, current_windows)
+        drift_report = evaluate_drift(reference_windows, current_windows)
         drift_reports.append(drift_report)
         print(f"Drift report for window starting at index {start}:\n", drift_report)
 
@@ -113,4 +113,4 @@ def run_pipeline(window_size=60):
 # Main function to run everything
 if __name__ == "__main__":
     window_size=60
-    run_pipeline(window_size)  
+    run_pipeline(window_size)
