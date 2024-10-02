@@ -59,7 +59,6 @@ final_predicted_prices = predicted_prices.flatten() + data['Close'].shift(1).ilo
 aligned_data = aligned_data.iloc[-len(final_predicted_prices):]
 
 
-# Step 6: Prepare data for Evidently
 aligned_dates = aligned_data['Date'].values[-len(final_predicted_prices):]
 aligned_original = aligned_data['Close'].values[-len(final_predicted_prices):]
 

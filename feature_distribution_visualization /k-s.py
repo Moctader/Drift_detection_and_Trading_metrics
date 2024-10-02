@@ -47,16 +47,19 @@ def build_and_train_lstm(X, y, epochs, validation_data=None):
     return model
 
 # Generate synthetic data with known drift points
-def generate_synthetic_data(segment_length=100, num_segments=11):
-    data_segments = [np.random.normal(loc=50 + 20 * i, scale=5, size=segment_length) for i in range(num_segments)]
+def generate_synthetic_data(segment_length=100, num_segments=11, drift=True):
+    if drift:
+        data_segments = [np.random.normal(loc=50 + 50 * i, scale=5, size=segment_length) for i in range(num_segments)]
+    else:
+        data_segments = [np.random.normal(loc=50, scale=5, size=segment_length) for _ in range(num_segments)]
     drift_data = np.concatenate(data_segments)
-    drift_points = [segment_length * i for i in range(1, num_segments)]
+    drift_points = [segment_length * i for i in range(1, num_segments)] if drift else []
     return drift_data, drift_points
 
 # Pipeline to compare drift detection using K-S test
-def run_comparison_pipeline(window_size, epochs):
+def run_comparison_pipeline(window_size, epochs, drift=True):
     # Generate synthetic data
-    drift_data, known_drift_points = generate_synthetic_data()
+    drift_data, known_drift_points = generate_synthetic_data(drift=drift)
     
     # Preprocess synthetic data
     drift_data = drift_data.reshape(-1, 1)
@@ -100,7 +103,7 @@ def run_comparison_pipeline(window_size, epochs):
     ref_dates = dates[:len(actual_ref)]  # Reference dates must match the length of actual_ref
     curr_dates = dates[len(actual_ref):]  # Current dates must match the length of actual_curr
 
-    buffer_zone = 50  # Buffer zone around known drift points
+    buffer_zone = 5  # Buffer zone around known drift points
     false_alarms = 0
 
     for idx in range(window_size, len(actual_curr)):
@@ -124,20 +127,75 @@ def run_comparison_pipeline(window_size, epochs):
     print(f'Total Detected Drifts: {len(drift_results["K-S Test"]["dates"])}')
     print(f'False Alarms: {false_alarms}')
 
-    # Plotting Drift Points
-    plt.figure(figsize=(12, 6))
-    plt.plot(drift_data, label='Synthetic Data with Drift')
-    for drift_point, drift_type in zip(drift_results['K-S Test']['dates'], drift_results['K-S Test']['types']):
-        if drift_type == 'true_detection':
-            plt.scatter(drift_point, drift_data[drift_point], color='blue', label='True Detection' if drift_point == drift_results['K-S Test']['dates'][0] else "")
-        else:
-            plt.scatter(drift_point, drift_data[drift_point], color='red', label='False Alarm' if drift_point == drift_results['K-S Test']['dates'][0] else "")
-    for known_drift_point in known_drift_points:
-        plt.axvline(known_drift_point, color='green', linestyle='-', label='Known Drift Point' if known_drift_point == known_drift_points[0] else "")
-    plt.legend()
-    plt.show()
+    return drift_data, ref_dates, actual_ref, predicted_ref, curr_dates, actual_curr, predicted_curr, drift_results, known_drift_points
 
 if __name__ == "__main__":
     window_size = 60
-    for epochs in [100, 150, 400]:
-        run_comparison_pipeline(window_size, epochs)
+    epochs = 100
+
+    # Run pipeline with concept drift
+    print("Running pipeline with concept drift:")
+    drift_data_with, ref_dates_with, actual_ref_with, predicted_ref_with, curr_dates_with, actual_curr_with, predicted_curr_with, drift_results_with, known_drift_points_with = run_comparison_pipeline(window_size, epochs, drift=True)
+
+    # Run pipeline without concept drift
+    print("\nRunning pipeline without concept drift:")
+    drift_data_without, ref_dates_without, actual_ref_without, predicted_ref_without, curr_dates_without, actual_curr_without, predicted_curr_without, drift_results_without, known_drift_points_without = run_comparison_pipeline(window_size, epochs, drift=False)
+
+    # Plotting Drift Points
+    plt.figure(figsize=(12, 6))
+    plt.plot(drift_data_with, label='Synthetic Data with Drift')
+    for drift_point, drift_type in zip(drift_results_with['K-S Test']['dates'], drift_results_with['K-S Test']['types']):
+        if drift_type == 'true_detection':
+            plt.scatter(drift_point, drift_data_with[drift_point], color='blue', label='True Detection' if drift_point == drift_results_with['K-S Test']['dates'][0] else "")
+        else:
+            plt.scatter(drift_point, drift_data_with[drift_point], color='red', label='False Alarm' if drift_point == drift_results_with['K-S Test']['dates'][0] else "")
+    for known_drift_point in known_drift_points_with:
+        plt.axvline(known_drift_point, color='green', linestyle='-', label='Known Drift Point' if known_drift_point == known_drift_points_with[0] else "")
+    plt.legend()
+    plt.title('Synthetic Data with Drift')
+    plt.show()
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(drift_data_without, label='Synthetic Data without Drift')
+    for drift_point, drift_type in zip(drift_results_without['K-S Test']['dates'], drift_results_without['K-S Test']['types']):
+        if drift_type == 'true_detection':
+            plt.scatter(drift_point, drift_data_without[drift_point], color='blue', label='True Detection' if drift_point == drift_results_without['K-S Test']['dates'][0] else "")
+        else:
+            plt.scatter(drift_point, drift_data_without[drift_point], color='red', label='False Alarm' if drift_point == drift_results_without['K-S Test']['dates'][0] else "")
+    for known_drift_point in known_drift_points_without:
+        plt.axvline(known_drift_point, color='green', linestyle='-', label='Known Drift Point' if known_drift_point == known_drift_points_without[0] else "")
+    plt.legend()
+    plt.title('Synthetic Data without Drift')
+    plt.show()
+
+    # Plot reference and current segments for both scenarios
+    plt.figure(figsize=(12, 6))
+    plt.plot(ref_dates_with, actual_ref_with, label='Actual Stock Price (Reference) with Drift', color='blue')
+    plt.plot(ref_dates_with, predicted_ref_with, label='Predicted Stock Price (Reference) with Drift', color='orange')
+    plt.plot(curr_dates_with, actual_curr_with, label='Actual Stock Price (Current) with Drift', color='green')
+    plt.plot(curr_dates_with, predicted_curr_with, label='Predicted Stock Price (Current) with Drift', color='red')
+
+    plt.plot(ref_dates_without, actual_ref_without, label='Actual Stock Price (Reference) without Drift', color='cyan')
+    plt.plot(ref_dates_without, predicted_ref_without, label='Predicted Stock Price (Reference) without Drift', color='magenta')
+    plt.plot(curr_dates_without, actual_curr_without, label='Actual Stock Price (Current) without Drift', color='yellow')
+    plt.plot(curr_dates_without, predicted_curr_without, label='Predicted Stock Price (Current) without Drift', color='black')
+
+    # Mark detected drift points for the scenario with drift
+    for drift_date, drift_value, drift_type in zip(drift_results_with['K-S Test']['dates'], drift_results_with['K-S Test']['values'], drift_results_with['K-S Test']['types']):
+        if drift_type == 'true_detection':
+            plt.scatter(drift_date, drift_value, color='blue', marker='x', s=100, label='Detected Drift (with Drift)' if drift_date == drift_results_with['K-S Test']['dates'][0] else "")
+        # else:
+        #     plt.scatter(drift_date, drift_value, color='red', marker='x', s=100, label='False Alarm (with Drift)' if drift_date == drift_results_with['K-S Test']['dates'][0] else "")
+
+    # Mark detected drift points for the scenario without drift
+    for drift_date, drift_value, drift_type in zip(drift_results_without['K-S Test']['dates'], drift_results_without['K-S Test']['values'], drift_results_without['K-S Test']['types']):
+        if drift_type == 'true_detection':
+            plt.scatter(drift_date, drift_value, color='cyan', marker='o', s=100, label='Detected Drift (without Drift)' if drift_date == drift_results_without['K-S Test']['dates'][0] else "")
+        # else:
+        #     plt.scatter(drift_date, drift_value, color='magenta', marker='o', s=100, label='False Alarm (without Drift)' if drift_date == drift_results_without['K-S Test']['dates'][0] else "")
+
+    plt.title('Drift Detection using K-S Test')
+    plt.xlabel('Date')
+    plt.ylabel('Price (USD)')
+    plt.legend()
+    plt.show()
